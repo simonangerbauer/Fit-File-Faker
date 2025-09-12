@@ -224,16 +224,10 @@ def rewrite_file_id_message(
         pass
         # new_m.product_name = m.product_name
     
-    if (
-        m.manufacturer == Manufacturer.DEVELOPMENT.value or 
-        m.manufacturer == Manufacturer.ZWIFT.value or 
-        m.manufacturer == Manufacturer.WAHOO_FITNESS.value or 
-        m.manufacturer == Manufacturer.PEAKSWARE.value
-    ):
-        new_m.manufacturer = Manufacturer.GARMIN.value
-        new_m.product = GarminProduct.EDGE_830.value
-        _logger.debug("    Modifying values")
-        print_message(f"    New Record: {message_num}", new_m)
+    new_m.manufacturer = Manufacturer.TACX.value
+    new_m.product = GarminProduct.TACX_TRAINING_APP_WIN.value
+    _logger.debug("    Modifying values")
+    print_message(f"    New Record: {message_num}", new_m)
 
     return (DefinitionMessage.from_data_message(new_m), new_m)
 
@@ -285,19 +279,12 @@ def edit_fit(
         if message.global_id == DeviceInfoMessage.ID:
             if isinstance(message, DeviceInfoMessage):
                 print_message(f"DeviceInfoMessage Record: {i}", message)
-                if (
-                    message.manufacturer == Manufacturer.DEVELOPMENT.value or
-                    message.manufacturer == 0 or
-                    message.manufacturer == Manufacturer.WAHOO_FITNESS.value or
-                    message.manufacturer == Manufacturer.ZWIFT.value or
-                    message.manufacturer == Manufacturer.PEAKSWARE.value
-                ):
-                    _logger.debug("    Modifying values")
-                    message.garmin_product = GarminProduct.EDGE_830.value
-                    message.product = GarminProduct.EDGE_830.value  # type: ignore
-                    message.manufacturer = Manufacturer.GARMIN.value
-                    message.product_name = ""
-                    print_message(f"    New Record: {i}", message)
+                _logger.debug("    Modifying values")
+                message.garmin_product = GarminProduct.TACX_TRAINING_APP_WIN.value
+                message.product = GarminProduct.TACX_TRAINING_APP_WIN.value # type: ignore
+                message.manufacturer = Manufacturer.TACX.value
+                message.product_name = ""                   
+                print_message(f"    New Record: {i}", message)
 
         builder.add(message)
 
