@@ -46,6 +46,9 @@ logging.getLogger("oauth1_auth").setLevel(logging.WARNING)
 from fit_tool.definition_message import DefinitionMessage
 from fit_tool.fit_file import FitFile
 from fit_tool.fit_file_builder import FitFileBuilder
+from fit_tool.profile.messages.record_message import RecordMessage
+from fit_tool.profile.messages.session_message import SessionMessage
+from fit_tool.profile.messages.lap_message import LapMessage
 from fit_tool.profile.messages.device_info_message import DeviceInfoMessage
 from fit_tool.profile.messages.file_creator_message import FileCreatorMessage
 from fit_tool.profile.messages.file_id_message import FileIdMessage
@@ -128,8 +131,10 @@ def print_message(prefix, message: FileIdMessage | DeviceInfoMessage):
     #     f'{prefix} - manufacturer: {message.manufacturer} ("{man}") - '
     #     f'product: {message.product} - garmin product: {message.garmin_product} ("{gar_prod}")'
     # )
-    _logger.debug(f"{prefix} - {message.to_row()=}\n"
-                  f"(Manufacturer: {man}, product: {message.product}, garmin_product: {gar_prod})")
+    _logger.debug(
+        f"{prefix} - {message.to_row()=}\n"
+        f"(Manufacturer: {man}, product: {message.product}, garmin_product: {gar_prod})"
+    )
 
 
 def get_fitfiles_path(existing_path: Path | None) -> Path:
@@ -202,18 +207,18 @@ def get_date_from_fit(fit_path: Path) -> Optional[datetime]:
                 break
     return res
 
+
 def rewrite_file_id_message(
-        m: FileIdMessage,
-        message_num: int,
-    ) -> tuple[DefinitionMessage, FileIdMessage]:
+    m: FileIdMessage,
+    message_num: int,
+) -> tuple[DefinitionMessage, FileIdMessage]:
     dt = datetime.fromtimestamp(m.time_created / 1000.0)  # type: ignore
     _logger.info(f'Activity timestamp is "{dt.isoformat()}"')
     print_message(f"FileIdMessage Record: {message_num}", m)
 
     new_m = FileIdMessage()
     new_m.time_created = (
-        m.time_created if m.time_created 
-        else int(dt.now().timestamp() * 1000)
+        m.time_created if m.time_created else int(dt.now().timestamp() * 1000)
     )
     if m.type:
         new_m.type = m.type
@@ -223,7 +228,7 @@ def rewrite_file_id_message(
         # garmin does not appear to define product_name, so don't copy it over
         pass
         # new_m.product_name = m.product_name
-    
+
     new_m.manufacturer = Manufacturer.TACX.value
     new_m.product = GarminProduct.TACX_TRAINING_APP_WIN.value
     _logger.debug("    Modifying values")
@@ -270,7 +275,17 @@ def edit_fit(
                 builder.add(DefinitionMessage.from_data_message(message))
                 builder.add(message)
                 continue
-        
+
+        if isinstance(message, RecordMessage):
+            if message.power is not None:
+                message.power = int(message.power * 0.77)
+
+        if isinstance(message, SessionMessage) or isinstance(message, LapMessage):
+            if message.avg_power is not None:
+                message.avg_power = int(message.avg_power * 0.77)
+            if message.max_power is not None:
+                message.max_power = int(message.max_power * 0.77)
+
         if message.global_id == FileCreatorMessage.ID:
             # skip any existing file creator message
             continue
@@ -281,9 +296,9 @@ def edit_fit(
                 print_message(f"DeviceInfoMessage Record: {i}", message)
                 _logger.debug("    Modifying values")
                 message.garmin_product = GarminProduct.TACX_TRAINING_APP_WIN.value
-                message.product = GarminProduct.TACX_TRAINING_APP_WIN.value # type: ignore
+                message.product = GarminProduct.TACX_TRAINING_APP_WIN.value  # type: ignore
                 message.manufacturer = Manufacturer.TACX.value
-                message.product_name = ""                   
+                message.product_name = ""
                 print_message(f"    New Record: {i}", message)
 
         builder.add(message)
@@ -584,7 +599,7 @@ def run():
         build_config_file(overwrite_existing_vals=True, rewrite_config=True)
         _logger.info(
             f'Config file has been written to "{_config_file}", now run one of the other options to '
-            'start editing/uploading files!'
+            "start editing/uploading files!"
         )
         sys.exit(0)
     if not args.input_path and not (
