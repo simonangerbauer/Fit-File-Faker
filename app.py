@@ -256,6 +256,7 @@ def edit_fit(
     # loop through records, find the one we need to change, and modify the values:
     for i, record in enumerate(fit_file.records):
         message = record.message
+        # _logger.info(message.to_row())
 
         # change file id to indicate file was saved by Edge 830
         if message.global_id == FileIdMessage.ID:
@@ -285,6 +286,8 @@ def edit_fit(
                 message.avg_power = int(message.avg_power * 0.77)
             if message.max_power is not None:
                 message.max_power = int(message.max_power * 0.77)
+            if message.total_calories is not None:
+                message.total_calories = int(message.total_calories * 0.77)
 
         if message.global_id == FileCreatorMessage.ID:
             # skip any existing file creator message
